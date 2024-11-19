@@ -1,6 +1,9 @@
 %include "io64.inc"
+
 section .rodata:
     fmt: db "%u", 0
+    fmt_out: db "%d ", 0
+    
 section .bss:
     arr resd 100             ; Массив остается в памяти
 
@@ -91,16 +94,19 @@ second_loop_end:
     jmp sorting_loop
 
 sort_end:
-    xor ecx, ecx             ; ecx = 0 (счетчик для вывода)
+    xor esi, esi             ; ecx = 0 (счетчик для вывода)
 
 output_loop:
-    cmp ecx, ebx             ; Пока ecx < n
+    cmp esi, ebx             ; Пока ecx < n
     jge end_program          ; Завершаем, если все элементы выведены
 
-    mov eax, [arr + ecx*4]   ; eax = arr[ecx]
-    PRINT_DEC 4, eax         ; Вывод числа
-    PRINT_STRING " "         ; Вывод пробела
-    inc ecx                  ; ecx++
+    mov eax, [arr + esi*4]   ; eax = arr[ecx]
+    
+    lea rcx, [fmt_out]       ; Адрес строки формата "%u "
+    mov rdx, rax             ; Значение для вывода передается в rdx
+    call printf              ; Выводим число
+
+    inc esi                  ; ecx++
     jmp output_loop          ; Переход к следующему элементу
 
 end_program:

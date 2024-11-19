@@ -1,116 +1,109 @@
 %include "io64.inc"
-
 section .rodata:
     fmt: db "%u", 0
-    fmt_out: db "%u ", 0
-
 section .bss:
-    arr resd 100
+    arr resd 100             ; Массив остается в памяти
 
 section .text:
     global main
 
-extern scanf, printf
-extern malloc, free
 main:
     push rbp
     mov rbp, rsp
-    sub rsp, 16            ; Выделяем место под локальные переменные n, left, right, temp
-
-    sub rsp, 8+32          ; Замена GET_UDEC
-    lea rcx, [fmt]
-    lea rdx, [rbp-16]
-    call scanf
     
-    mov eax, [rbp-16]
-    cmp eax, 100
-    jg end_program 
-    cmp eax, 0
-    jle end_program 
+    sub rsp, 4+32
+    
+    lea rcx, [fmt]
+    lea rdx, [rbp-4]
+    call scanf
+    mov ebx, [rbp-4]
+  
+    cmp ebx, 100             ; Если n > 100, завершаем
+    jg end_program
+    cmp ebx, 0               ; Если n <= 0, завершаем
+    jle end_program
 
-    mov ecx, 0 
+    xor esi, esi             ; ecx = 0 (счетчик для ввода массива)
     
 input_loop:
-    cmp ecx, [rbp-16]      ; cmp ecx, n
-    jge sort_start
-    
-    GET_UDEC 4, [arr + ecx*4]
-    inc ecx 
+    cmp esi, ebx  
+    jge sort_start 
+
+    lea rcx, [fmt]
+    lea rdx, [arr + esi*4]  ; Адрес текущего элемента массива
+    call scanf
+
+    inc esi
     jmp input_loop
 
 sort_start:
-    mov dword [rbp-12], 0  ; left = 0
-    mov eax, [rbp-16]      ; eax = n
-    dec eax
-    mov dword [rbp-8], eax ; right = n - 1
+    xor edi, edi             ; edi = 0 (left = 0)
+    mov esi, ebx             ; esi = n
+    dec esi                  ; esi = n - 1 (right = n - 1)
 
 sorting_loop:
-    mov eax, [rbp-12]      ; eax = left
-    mov ebx, [rbp-8]       ; ebx = right
-    cmp eax, ebx
-    jge sort_end 
-    
-    mov ecx, [rbp-12]      ; ecx = left
+    mov eax, edi             ; eax = left
+    cmp eax, esi             ; left >= right?
+    jge sort_end             ; Если да, завершить сортировку
+
+    mov ecx, edi             ; ecx = left
     
 first_loop_start:
-    mov ebx, [rbp-8]       ; ebx = right
-    cmp ecx, ebx 
+    cmp ecx, esi             ; Пока ecx < right
     jge first_loop_end
 
-    mov edx, [arr + ecx*4]
-    mov esi, [arr + ecx*4 + 4] 
-    cmp edx, esi 
-    jle no_swap1 
+    mov edx, [arr + ecx*4]   ; edx = arr[ecx]
+    mov eax, [arr + ecx*4 + 4] ; eax = arr[ecx+1]
+    cmp edx, eax             ; Сравниваем arr[ecx] и arr[ecx+1]
+    jle no_swap1
 
-    mov [rbp-4], edx       ; temp = edx
-    mov [arr + ecx*4], esi
-    mov [arr + ecx*4 + 4], edx 
+    ; Меняем местами arr[ecx] и arr[ecx+1]
+    mov [arr + ecx*4], eax
+    mov [arr + ecx*4 + 4], edx
 
 no_swap1:
-    inc ecx 
+    inc ecx                  ; ecx++
     jmp first_loop_start
-    
+
 first_loop_end:
-    dec dword [rbp-8]      ; right--
-    mov ecx, [rbp-8]       ; ecx = right
-    
+    dec esi                  ; right--
+    mov ecx, esi             ; ecx = right
+
 second_loop_start:
-    mov eax, [rbp-12]      ; eax = left
-    cmp ecx, eax 
-    jle second_loop_end 
+    cmp ecx, edi             ; Пока ecx > left
+    jle second_loop_end
 
-    mov edx, [arr + ecx*4]
-    mov esi, [arr + ecx*4 - 4]
-    cmp esi, edx 
-    jle no_swap2 
+    mov edx, [arr + ecx*4]   ; edx = arr[ecx]
+    mov eax, [arr + ecx*4 - 4] ; eax = arr[ecx-1]
+    cmp eax, edx             ; Сравниваем arr[ecx-1] и arr[ecx]
+    jle no_swap2
 
-    mov [rbp-4], esi       ; temp = esi
+    ; Меняем местами arr[ecx-1] и arr[ecx]
     mov [arr + ecx*4 - 4], edx
-    mov [arr + ecx*4], esi
+    mov [arr + ecx*4], eax
 
 no_swap2:
-    dec ecx  
+    dec ecx                  ; ecx--
     jmp second_loop_start
-    
+
 second_loop_end:
-    inc dword [rbp-12]     ; left++
-    jmp sorting_loop 
+    inc edi                  ; left++
+    jmp sorting_loop
 
 sort_end:
-    mov ecx, 0  
-    
-output_loop:
-    cmp ecx, [rbp-16]      ; cmp ecx, n
-    jge end_program 
+    xor ecx, ecx             ; ecx = 0 (счетчик для вывода)
 
-    mov eax, [arr + ecx*4]
-    PRINT_DEC 4, eax 
-    PRINT_STRING " "
-    inc ecx 
-    jmp output_loop
+output_loop:
+    cmp ecx, ebx             ; Пока ecx < n
+    jge end_program          ; Завершаем, если все элементы выведены
+
+    mov eax, [arr + ecx*4]   ; eax = arr[ecx]
+    PRINT_DEC 4, eax         ; Вывод числа
+    PRINT_STRING " "         ; Вывод пробела
+    inc ecx                  ; ecx++
+    jmp output_loop          ; Переход к следующему элементу
 
 end_program:
-    NEWLINE
     mov rsp, rbp
     pop rbp
     RET

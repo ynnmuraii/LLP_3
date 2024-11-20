@@ -1,39 +1,45 @@
 %include "io64.inc"
 
-section .rodata:
+section .rodata
     fmt: db "%u", 0
     fmt_out: db "%d ", 0
-    
-section .bss:
-    arr resd 100             ; Массив остается в памяти
 
-section .text:
+section .bss
+    arr resd 100             ; Массив остаётся в памяти
+
+extern scanf, printf
+extern malloc, free
+
+section .text
     global main
 
 main:
+    ; Пролог функции
     push rbp
     mov rbp, rsp
-    
-    sub rsp, 4+32
-    
-    lea rcx, [fmt]
-    lea rdx, [rbp-4]
+    sub rsp, 32              ; Выравниваем стек для локальных переменных
+
+    ; Считываем n
+    lea rcx, [fmt]           ; 1-й аргумент в rcx
+    lea rdx, [rbp-4]         ; 2-й аргумент в rdx
     call scanf
-    mov ebx, [rbp-4]
-  
-    cmp ebx, 100             ; Если n > 100, завершаем
+
+    mov ebx, [rbp-4]         ; n сохраняется в ebx
+
+    ; Проверка допустимости n
+    cmp ebx, 100
     jg end_program
-    cmp ebx, 0               ; Если n <= 0, завершаем
+    cmp ebx, 0
     jle end_program
 
-    xor esi, esi             ; ecx = 0 (счетчик для ввода массива)
-    
+    xor esi, esi             ; esi = 0 (счётчик для ввода массива)
+
 input_loop:
     cmp esi, ebx  
     jge sort_start 
 
     lea rcx, [fmt]
-    lea rdx, [arr + esi*4]  ; Адрес текущего элемента массива
+    lea rdx, [arr + esi*4]   ; Адрес текущего элемента массива
     call scanf
 
     inc esi
@@ -94,14 +100,13 @@ second_loop_end:
     jmp sorting_loop
 
 sort_end:
-    xor esi, esi             ; ecx = 0 (счетчик для вывода)
+    xor esi, esi             ; ecx = 0 (счётчик для вывода)
 
 output_loop:
     cmp esi, ebx             ; Пока ecx < n
     jge end_program          ; Завершаем, если все элементы выведены
 
     mov eax, [arr + esi*4]   ; eax = arr[ecx]
-    
     lea rcx, [fmt_out]       ; Адрес строки формата "%u "
     mov rdx, rax             ; Значение для вывода передается в rdx
     call printf              ; Выводим число
@@ -110,6 +115,7 @@ output_loop:
     jmp output_loop          ; Переход к следующему элементу
 
 end_program:
+    ; Восстанавливаем стек и завершаем программу
     mov rsp, rbp
     pop rbp
-    RET
+    ret

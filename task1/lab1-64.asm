@@ -14,6 +14,7 @@ section .text
     global main
 
 main:
+    mov rbp, rsp; for correct debugging
     ; Пролог функции
     push rbp
     mov rbp, rsp
@@ -32,17 +33,17 @@ main:
     cmp ebx, 0
     jle end_program
 
-    xor esi, esi             ; esi = 0 (счётчик для ввода массива)
+    xor rsi, rsi             ; esi = 0 (счётчик для ввода массива)
 
 input_loop:
     cmp esi, ebx  
     jge sort_start 
 
     lea rcx, [fmt]
-    lea rdx, [arr + esi*4]   ; Адрес текущего элемента массива
+    lea rdx, [arr + rsi*4]   ; Адрес текущего элемента массива
     call scanf
 
-    inc esi
+    inc rsi
     jmp input_loop
 
 sort_start:
@@ -61,14 +62,14 @@ first_loop_start:
     cmp ecx, esi             ; Пока ecx < right
     jge first_loop_end
 
-    mov edx, [arr + ecx*4]   ; edx = arr[ecx]
-    mov eax, [arr + ecx*4 + 4] ; eax = arr[ecx+1]
+    mov edx, [arr + rcx*4]   ; edx = arr[ecx]
+    mov eax, [arr + rcx*4 + 4] ; eax = arr[ecx+1]
     cmp edx, eax             ; Сравниваем arr[ecx] и arr[ecx+1]
     jle no_swap1
 
     ; Меняем местами arr[ecx] и arr[ecx+1]
-    mov [arr + ecx*4], eax
-    mov [arr + ecx*4 + 4], edx
+    mov [arr + rcx*4], eax
+    mov [arr + rcx*4 + 4], edx
 
 no_swap1:
     inc ecx                  ; ecx++
@@ -82,14 +83,14 @@ second_loop_start:
     cmp ecx, edi             ; Пока ecx > left
     jle second_loop_end
 
-    mov edx, [arr + ecx*4]   ; edx = arr[ecx]
-    mov eax, [arr + ecx*4 - 4] ; eax = arr[ecx-1]
+    mov edx, [arr + rcx*4]   ; edx = arr[ecx]
+    mov eax, [arr + rcx*4 - 4] ; eax = arr[ecx-1]
     cmp eax, edx             ; Сравниваем arr[ecx-1] и arr[ecx]
     jle no_swap2
 
     ; Меняем местами arr[ecx-1] и arr[ecx]
-    mov [arr + ecx*4 - 4], edx
-    mov [arr + ecx*4], eax
+    mov [arr + rcx*4 - 4], edx
+    mov [arr + rcx*4], eax
 
 no_swap2:
     dec ecx                  ; ecx--
@@ -106,7 +107,7 @@ output_loop:
     cmp esi, ebx             ; Пока ecx < n
     jge end_program          ; Завершаем, если все элементы выведены
 
-    mov eax, [arr + esi*4]   ; eax = arr[ecx]
+    mov eax, [arr + rsi*4]   ; eax = arr[ecx]
     lea rcx, [fmt_out]       ; Адрес строки формата "%u "
     mov rdx, rax             ; Значение для вывода передается в rdx
     call printf              ; Выводим число
